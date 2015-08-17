@@ -162,9 +162,13 @@ renderResponse = function ( appRequest, appResponse ) {
 
     // Cache?
     if ( cacheJson && cacheHtml && appRequest.query.format !== "json" ) {
-        sqsTemplate.renderTemplate( qrs, cacheJson, cacheHtml, function ( tpl ) {
-            appResponse.status( 200 ).send( tpl );
-        });
+        if ( !isJson( cacheJson ) ) {
+            appResponse.status( 200 ).send( cacheHtml );
+        } else {
+            sqsTemplate.renderTemplate( qrs, cacheJson, cacheHtml, function ( tpl ) {
+                appResponse.status( 200 ).send( tpl );
+            });
+        }
 
         return;
     }
@@ -203,9 +207,13 @@ renderResponse = function ( appRequest, appResponse ) {
                 sqsCache.set( (cacheName + ".json"), data.json.json );
                 sqsCache.set( (cacheName + ".html"), data.html.html );
 
-                sqsTemplate.renderTemplate( qrs, data.json.json, sqsCache.get( (cacheName + ".html") ), function ( tpl ) {
-                    appResponse.status( 200 ).send( tpl );
-                });
+                if ( !isJson( data.json.json ) ) {
+                    appResponse.status( 200 ).send( data.html.html );
+                } else {
+                    sqsTemplate.renderTemplate( qrs, data.json.json, sqsCache.get( (cacheName + ".html") ), function ( tpl ) {
+                        appResponse.status( 200 ).send( tpl );
+                    });
+                }
 
             } else {
                 // Handle errors
@@ -213,6 +221,10 @@ renderResponse = function ( appRequest, appResponse ) {
             }
         });
     }
+},
+
+isJson = function ( data ) {
+    return ( typeof data == "object" )
 },
 
 
